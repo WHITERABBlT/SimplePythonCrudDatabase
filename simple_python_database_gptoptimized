@@ -1,0 +1,69 @@
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+
+@dataclass
+class Employee:
+    """Data model representing an employee."""
+    id: int
+    name: str
+    age: int
+    position: str
+
+# In-memory storage for employees (optimized: dict for O(1) lookup)
+_employees: Dict[int, Employee] = {}
+
+def _get_employee_by_id(emp_id: int) -> Optional[Employee]:
+    """Internal helper to find an employee by ID."""
+    return _employees.get(emp_id)
+
+def create_employee(id: int, name: str, age: int, position: str) -> Employee:
+    """Create and store a new employee."""
+    if id in _employees:
+        raise ValueError(f"Employee with id {id} already exists.")
+
+    emp = Employee(id=id, name=name, age=age, position=position)
+    _employees[id] = emp
+    return emp
+
+def read_employee(id: int) -> Optional[Employee]:
+    """Read (retrieve) an employee by ID."""
+    return _get_employee_by_id(id)
+
+def update_employee(id: int, updated_data: Dict[str, Any]) -> Optional[Employee]:
+    """Update fields of an existing employee."""
+    emp = _get_employee_by_id(id)
+    if emp is None:
+        return None
+
+    allowed = {"name", "age", "position"}
+
+    for key, value in updated_data.items():
+        if key in allowed:
+            setattr(emp, key, value)
+        elif key == "id":
+            raise ValueError("Cannot update the 'id' of an existing employee.")
+        else:
+            # silently ignore unknown keys
+            continue
+
+    return emp
+
+def delete_employee(id: int) -> bool:
+    """Delete the employee with the given ID."""
+    return _employees.pop(id, None) is not None
+
+if __name__ == "__main__":
+    try:
+        e1 = create_employee(1, "Alice", 30, "Engineer")
+        e2 = create_employee(2, "Bob", 28, "Designer")
+        print("Created:", e1, e2)
+
+        print("Read 1:", read_employee(1))
+
+        update_employee(1, {"age": 31, "position": "Senior Engineer"})
+        print("After update 1:", read_employee(1))
+
+        delete_employee(2)
+        print("All employees:", list(_employees.values()))
+    except Exception as ex:
+        print("Error:", ex)
