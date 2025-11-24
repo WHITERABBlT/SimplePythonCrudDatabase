@@ -1,116 +1,109 @@
-"""
-Version compatibility notes
-Minimum supported Python version: 3.7 (dataclasses)
-Recommended for new projects: Python 3.9–3.11
-Newer versions: Python 3.12+ (when available)
-
-Notes:
-- The code uses dataclasses (Python 3.7+), typing (3.5+), f-strings (3.6+), and standard library features.
-- If you must run on Python 3.6, dataclasses backport is needed and some typing features might be slightly different.
-
-Summary:
-This section documents the minimum, recommended, and newer Python versions to help you choose an environment. The code itself remains unchanged.
-"""
+# Version compatibility notes
+# Minimum supported Python version: 3.7 (dataclasses)
+# Recommended for new projects: Python 3.9–3.11
+# Newer versions: Python 3.12+ (when available)
+#
+# Notes:
+# - The code uses dataclasses (Python 3.7+), typing (3.5+), f-strings (3.6+),
+#   and standard library features. If you must run on Python 3.6, consider
+#   the dataclasses backport and be aware some typing features might differ.
+#
+# Summary:
+# - This compatibility section documents the minimum, recommended, and newer
+#   Python versions to help you choose an environment. The code itself remains
+#   unchanged aside from these version notes.
 
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
 
+# --- 1) Data model: Employee ---
+# The Employee class represents a single employee record in memory.
+# Each attribute is documented to explain its purpose and expected type.
 @dataclass
 class Employee:
-    """Data model representing an employee."""
+    # Unique identifier for the employee
     id: int
+    # Employee full name
     name: str
+    # Age of the employee in years
     age: int
+    # Job title or position within the organization
     position: str
 
 
-# In-memory storage for employees
+# --- 2) Data storage: In-memory list of employees ---
+# A simple in-memory storage (a Python list) for demonstration and testing.
+# The list holds Employee instances and is the basis for CRUD operations.
 employees: List[Employee] = []
 
 
+# --- 3) Internal helper: _get_employee_by_id ---
 def _get_employee_by_id(emp_id: int) -> Optional[Employee]:
-    """Internal helper to find an employee by ID.
-
-    Args:
-        emp_id: The unique identifier of the employee.
-
-    Returns:
-        The Employee instance if found, otherwise None.
-    """
+    # Internal helper: find and return the Employee with the given ID, or None if not found
+    # This centralizes the lookup logic so all CRUD operations can reuse it
     for emp in employees:
         if emp.id == emp_id:
             return emp
     return None
 
 
+# --- 4) Create operation: create_employee ---
 def create_employee(id: int, name: str, age: int, position: str) -> Employee:
-    """Create and store a new employee.
-
-    Raises:
-        ValueError: If an employee with the given ID already exists.
-    """
+    # Create a new Employee and add to in-memory storage
+    # First, ensure no existing employee has the same ID to preserve uniqueness
     if _get_employee_by_id(id) is not None:
         raise ValueError(f"Employee with id {id} already exists.")
 
+    # Build the Employee object and append to storage
     emp = Employee(id=id, name=name, age=age, position=position)
     employees.append(emp)
     return emp
 
 
+# --- 5) Read operation: read_employee ---
 def read_employee(id: int) -> Optional[Employee]:
-    """Read (retrieve) an employee by ID.
-
-    Returns:
-        The Employee instance if found, otherwise None.
-    """
+    # Retrieve an employee by ID; returns None if not found
+    # Delegates to the shared helper for consistency
     return _get_employee_by_id(id)
 
 
+# --- 6) Update operation: update_employee ---
 def update_employee(id: int, updated_data: Dict[str, Any]) -> Optional[Employee]:
-    """Update fields of an existing employee using a dict of updates.
-
-    Only known fields are updated. The function will raise if an attempt is
-    made to change the immutable 'id' field.
-
-    Args:
-        id: The ID of the employee to update.
-        updated_data: A dictionary of fields to update (e.g., {"name": "New Name"}).
-
-    Returns:
-        The updated Employee instance, or None if the employee does not exist.
-    """
+    # Update allowed fields of an existing employee using a dictionary
+    # Look up the employee; if not found, return None
     emp = _get_employee_by_id(id)
     if emp is None:
         return None
 
+    # Only these fields may be updated
     allowed = {"name", "age", "position"}
     for key, value in updated_data.items():
         if key in allowed:
+            # Apply allowed field updates
             setattr(emp, key, value)
         elif key == "id":
-            # Do not allow updating the primary key
+            # Prohibit changing the immutable primary key
             raise ValueError("Cannot update the 'id' of an existing employee.")
         else:
-            # Ignore unknown keys (could also log a warning)
+            # Ignore unknown keys to avoid silent failures
             pass
     return emp
 
 
+# --- 7) Delete operation: delete_employee ---
 def delete_employee(id: int) -> bool:
-    """Delete the employee with the given ID.
-
-    Returns:
-        True if an employee was deleted, False if not found.
-    """
+    # Delete the employee with the given ID; return True if deleted
     global employees
     before = len(employees)
+    # Create a new list excluding the employee with the given ID
     employees = [emp for emp in employees if emp.id != id]
     return len(employees) < before
 
 
+# --- 8) Example usage: demonstrate a simple CRUD flow ---
 if __name__ == "__main__":
-    # Simple usage example
+    # Demonstration of create, read, update, and delete operations
     try:
         e1 = create_employee(1, "Alice", 30, "Engineer")
         e2 = create_employee(2, "Bob", 28, "Designer")
@@ -125,3 +118,14 @@ if __name__ == "__main__":
         print("All employees:", employees)
     except Exception as ex:
         print("Error:", ex)
+
+
+# --- 9) Readability enhancement: why these comments help ---
+# - The purpose of each section (class, storage, CRUD, usage) is stated up front.
+# - Each Employee attribute has a clear description of its role and type.
+# - CRUD steps include validation details (e.g., unique IDs, immutability of 'id').
+# - The example usage is annotated to show the flow and expected outputs.
+
+# Summary:
+# The added comments explain the intent, data model, and CRUD logic in plain language,
+# making the code approachable for new readers and easier to maintain or extend.
